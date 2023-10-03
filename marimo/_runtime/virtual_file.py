@@ -14,16 +14,20 @@ if TYPE_CHECKING:
 @dataclasses.dataclass
 class VirtualFile:
     url: str
+    filename: str
 
     def __init__(self, filename: str) -> None:
-        raise NotImplementedError
+        self.filename = filename
+        # TODO: pass session_id as query param
+        self.url = f"/@file/{filename}"
 
 
-class VirutalFileLifeCycleItem(CellLifecycleItem):
+class VirtualFileLifecycleItem(CellLifecycleItem):
     def __init__(
-        self, filename: str, to_stream: Callable[[], io.BytesIO]
+        self, filename: str, mimetype: str, to_stream: Callable[[], io.BytesIO]
     ) -> None:
         self.filename = filename
+        self.mimetype = mimetype
         self.to_stream = to_stream
 
     def create(self, context: "RuntimeContext") -> None:
@@ -42,8 +46,13 @@ class VirutalFileLifeCycleItem(CellLifecycleItem):
 class VirtualFileRegistry:
     registry: dict[str, VirtualFile] = dataclasses.field(default_factory=dict)
 
-    def add(self, filename: str, virtual_file: VirtualFile) -> None:
-        self.registry[filename] = virtual_file
+    def add(self, virtual_file: VirtualFile) -> None:
+        self.registry[virtual_file.filename] = virtual_file
+
+    def get(self, filename: str) -> VirtualFile:
+        if filename not in self.registry:
+            raise FileNotFoundError(filename)
+        return self.registry[filename]
 
     def remove(self, filename: str) -> None:
         if filename in self.registry:
