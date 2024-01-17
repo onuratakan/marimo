@@ -5,7 +5,8 @@ import { AUTOCOMPLETER, Autocompleter } from "./Autocompleter";
 import { Logger } from "../../../utils/Logger";
 import { CellId, HTMLCellId } from "@/core/cells/ids";
 import { getCellEditorView } from "@/core/cells/cells";
-import { dispatchShowTooltip } from "./hints";
+import { store } from "@/core/state/jotai";
+import { documentationAtom } from "@/core/documentation/state";
 
 export async function completer(
   context: CompletionContext
@@ -39,10 +40,10 @@ export async function completer(
     message: result,
     limitToType: "tooltip",
   });
-  // Find EditorView for the cell
-  const editorView = getCellEditorView(cellId);
-  if (editorView) {
-    dispatchShowTooltip(editorView, tooltip);
+  if (tooltip) {
+    store.set(documentationAtom, {
+      documentation: tooltip.html ?? null,
+    });
   }
   if (tooltip) {
     return null;

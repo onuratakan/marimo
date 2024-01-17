@@ -1,16 +1,9 @@
 /* Copyright 2023 Marimo. All rights reserved. */
 import { HTMLCellId } from "@/core/cells/ids";
-import {
-  EditorView,
-  Tooltip,
-  hasHoverTooltips,
-  hoverTooltip,
-  keymap,
-  showTooltip,
-} from "@codemirror/view";
+import { hoverTooltip } from "@codemirror/view";
 import { AUTOCOMPLETER, Autocompleter } from "./Autocompleter";
 import { Logger } from "@/utils/Logger";
-import { StateField, StateEffect, Prec, Text } from "@codemirror/state";
+import { Text } from "@codemirror/state";
 
 export function hintTooltip() {
   return [
@@ -50,85 +43,8 @@ export function hintTooltip() {
         hideOnChange: true,
       }
     ),
-    Prec.highest(
-      keymap.of([
-        {
-          key: "Escape",
-          run: clearTooltips,
-        },
-      ])
-    ),
-    Prec.highest(
-      keymap.of([
-        {
-          key: "Backspace",
-          run: (view) => {
-            clearTooltips(view);
-            return false; // don't stop propagation
-          },
-        },
-      ])
-    ),
-    // Removing tooltips (and completion) on blur is handled by cell editor, so
-    // that text is selectable
   ];
 }
-
-/**
- * Dispatch an effect that shows a tooltip
- */
-export function dispatchShowTooltip(
-  view: EditorView,
-  tooltip: Tooltip | undefined
-): void {
-  view.dispatch({
-    effects: TooltipFromCompletionApi.of([tooltip].filter(Boolean)),
-  });
-}
-
-export function clearTooltips(view: EditorView): boolean {
-  // We stopped showing cursorTooltipField
-  // const hasCompletionTooltip = view.state.field(cursorTooltipField).length > 0;
-  // if (hasCompletionTooltip) {
-  //   view.dispatch({
-  //     effects: TooltipFromCompletionApi.of([]),
-  //   });
-  //   return true;
-  // }
-  return false;
-}
-
-// Effect that dispatches a tooltip
-const TooltipFromCompletionApi = StateEffect.define<Tooltip[]>();
-
-// Field that stores the current tooltips
-export const cursorTooltipField = StateField.define<Tooltip[]>({
-  create: () => {
-    return [];
-  },
-  update(tooltips, tr) {
-    // If the effect is a tooltip, return it
-    for (const effect of tr.effects) {
-      if (effect.is(TooltipFromCompletionApi)) {
-        return effect.value;
-      }
-    }
-
-    // Hide if hover tooltips are enabled
-    if (hasHoverTooltips(tr.state)) {
-      return [];
-    }
-
-    // Otherwise, return the current tooltips
-    return tooltips;
-  },
-
-  provide: (field) => {
-    return showTooltip.computeN([field], (state) => {
-      return state.field(field);
-    });
-  },
-});
 
 export function getPositionAtWordBounds(doc: Text, pos: number) {
   let startToken = pos;
